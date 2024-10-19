@@ -1,0 +1,40 @@
+Description : FridayHITT AWS Cloud Formation Infrastruture Template
+
+
+
+
+
+Resources:
+  HITTVPC1:                                # Create Naminng convention for HITTVPC and VPC Number, in this case VPC1
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 15.0.0.0/16               # Allocate 65531 usable IPs for this VPC , both Public and Private Subnet including Internet GW (5 IPs reserved by AWS)
+      EnableDnsSupport: 'true'             # Follow default value
+      EnableDnsHostnames: 'true'           # Follow default value
+      Tags:
+       - Key: Name                         # Tag VPC Name
+         Value: HITT-VPC-1                 # Value for HITT-VPC-1 for more clear reading
+
+  HITTPublicSubnet1:                       # Create Naminng convention for Public Subnet HITTPublicSubnet  and Subnet Number, in this case Public Subnet1
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref HITTVPC1                 # Attached to HITTVPC1 
+      CidrBlock: 15.0.0.0/23               # Allocate 507 usable IPs for this public subnet (5 IPs reserved by AWS)
+      AvailabilityZone: us-east-1a         # AZ for subnet US-East(N.Virginia)
+      MapPublicIpOnLaunch: 'true'          # Automatically assign public IPs
+      Tags:
+       - Key: Name                         # Tag Public Subnet Name
+         Value: HITTVPC1-Public-Subnet-1   # Value for HITTVPC1-Public-Subnet-1 for more clear reading
+
+                                           # NOTE THERE IS RESERVED ROOM IPS for Public Subnet Future Expansion (Total 4,056 usable IP addresses for public subnet)
+
+
+  HITTPrivateSubnet1:                      # Create Naminng convention for Private Subnet HITTPublicSubnet  and Subnet Number, in this case Private Subnet1
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref HITTVPC1                 # Attached to HITTVPC1 
+      CidrBlock: 15.0.18.0/22              # Allocate 1019 usable IPs for this private subnet (5 IPs reserved by AWS)
+      AvailabilityZone: us-east-1a         # AZ for subnet US-East(N.Virginia)
+      Tags:
+       - Key: Name                         # Tag Private Subnet Name
+         Value: HITTVPC1-Private-Subnet-1  # Tage Value for HITTVPC1-Public-Subnet-1 for more clear reading
