@@ -1,8 +1,8 @@
 Description: FridayHITT AWS Cloud Formation Infrastruture Template
 
 Resources:
+  # Create VPC -> HITTVPC and VPC Number, in this case VPC1
   HITTVPC1:
-    # Create Naminng convention for HITTVPC and VPC Number, in this case VPC1
     Type: AWS::EC2::VPC
     Properties:
       CidrBlock: 15.0.0.0/16 # Allocate 65531 usable IPs for this VPC , both Public and Private Subnet including Internet GW (5 IPs reserved by AWS)
@@ -12,39 +12,78 @@ Resources:
         - Key: Name # Tag VPC Name
           Value: HITT-VPC-1 # Value for HITT-VPC-1 for more clear reading
 
+  # Create  Public Subnet HITTPublicSubnet  and Subnet Number, in this case Public Subnet1
   HITTPublicSubnet1:
-    # Create Naminng convention for Public Subnet HITTPublicSubnet  and Subnet Number, in this case Public Subnet1
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref HITTVPC1 # Attached to HITTVPC1 
       CidrBlock: 15.0.0.0/23 # Allocate 507 usable IPs for this public subnet (5 IPs reserved by AWS)
       AvailabilityZone: us-east-1a # AZ for subnet US-East(N.Virginia)
-      MapPublicIpOnLaunch: true   # Automatically assign public IPs
+      MapPublicIpOnLaunch: true # Automatically assign public IPs to EC2 instances
       Tags:
-        - Key: Name                         # Tag Public Subnet Name
-          Value: HITT-VPC1-Public-Subnet-1  # Value for HITTVPC1-Public-Subnet-1  more clear reading
+        - Key: Name # Tag Public Subnet Name
+          Value: HITT-VPC1-Public-Subnet-1
+    # Value for HITTVPC1-Public-Subnet-1  more clear reading
+    # NOTE THERE IS RESERVED ROOM IPS for Public Subnet Future Expansion (Total 4,056 usable IP addresses for public subnet)
 
-                                            # NOTE THERE IS RESERVED ROOM IPS for Public Subnet Future Expansion (Total 4,056 usable IP addresses for public subnet)
 
-  HITTPrivateSubnet1:                     # Create Naminng convention for Private Subnet HITTPublicSubnet  and Subnet Number, in this case Private Subnet1
+    # Create  Private Subnet HITTPublicSubnet  and Subnet Number, in this case Private Subnet1
+  HITTPrivateSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
-      VpcId: !Ref HITTVPC1                # Attached to HITTVPC1 
-      CidrBlock: 15.0.18.0/22             # Allocate 1019 usable IPs for this private subnet (5 IPs reserved by AWS)
-      AvailabilityZone: us-east-1a        # AZ for subnet US-East(N.Virginia)
+      VpcId: !Ref HITTVPC1 # Attached to HITTVPC1 
+      CidrBlock: 15.0.18.0/22 # Allocate 1019 usable IPs for this private subnet (5 IPs reserved by AWS)
+      AvailabilityZone: us-east-1a # AZ for subnet US-East(N.Virginia)
       Tags:
-        - Key: Name                       # Tag Private Subnet Name
+        - Key: Name # Tag Private Subnet Name
           Value: HITT-VPC1-Private-Subnet-1 # Tage Value for HITTVPC1-Public-Subnet-1  more clear reading
-
-  HITTInternetGateway1:                   # Create Naminng convention for Internet Gateway and  Number, in this case HITTInternetGateway1
+    # Create Internet Gateway and  Number, in this case HITTInternetGateway1
+  HITTInternetGateway:
     Type: AWS::EC2::InternetGateway
     Properties:
       Tags:
-        - Key: Name                                   # Tag Internet Gateway Name
-          Value: HITT-Internet-Gateway-1               # Tage Value for HITT-Internet-Gateway-1  more clear reading
-
-  HITTAttachInternetGateway:                           # Attached HITTInternetGateway1 into HITTVPC1
+        - Key: Name # Tag Internet Gateway Name
+          Value: HITT-Internet-Gateway # Tage Value for HITT-Internet-Gateway-1  more clear reading
+    # Attached HITTInternetGateway1 into HITTVPC1
+  HITTAttachInternetGateway:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
-      VpcId: !Ref HITTVPC1                             # Reference to VPC -> HITTVPC1
-      InternetGatewayId: !Ref HITTInternetGateway1     # Reference to Internet Gateway -> HITTInternetGateway1
+      VpcId: !Ref HITTVPC1 # Reference to VPC -> HITTVPC1
+      InternetGatewayId: !Ref HITTInternetGateway # Reference to Internet Gateway -> HITTInternetGateway1
+    # Create  Public Route Table,
+  HITTPublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref HITTVPC1 # Reference to VPC -> HITTVPC1
+      Tags:
+        - Key: Name # Tag Public Route Table Name
+          Value: HITT-Public-Route-Table # Tag Value for HITT-Public-Route-Table more clear reading
+  # Create  Public Route
+  HITTPublicRoute:
+    Type: AWS::EC2::Route
+    #DependsOn: GatewayToInternet
+    Properties:
+      RouteTableId: !Ref HITTPublicRouteTable #Reference to Public Route Table
+      DestinationCidrBlock: 0.0.0.0/0 # Connect to every distination to Internet
+      GatewayId: !Ref HITTInternetGateway # Reference to Internet Gateway HITTInternetGateway1
+
+  # Binding Public Subnet  to Public Route Table
+  HITTPublicSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref HITTPublicSubnet1 # Binding to Public Subnet 1
+      RouteTableId: !Ref HITTPublicRouteTable #Binding to Public Route Table
+  # Create Private Route Table,
+  HITTPrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref HITTVPC1 # Reference to VPC -> HITTVPC1
+      Tags:
+        - Key: Name # Tag Private Route Table Name
+          Value: HITT-Private-Route-Table # Tag Value for HITT-Private-Route-Table more clear reading
+  # Binding Private Subnet  to Private Route Table
+  HITTPrivateSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref HITTPrivateSubnet1 # Binding to Public Subnet 1
+      RouteTableId: !Ref HITTPrivateRouteTable #Binding to Public Route Table
