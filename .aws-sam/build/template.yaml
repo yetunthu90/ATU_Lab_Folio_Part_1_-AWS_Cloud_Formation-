@@ -1,0 +1,223 @@
+Description: FridayHITT AWS Cloud Formation Infrastruture Template
+Parameters:
+  InstanceTypeParam:
+    Description: Default value is t2.micro
+    Type: String
+    Default: t2.micro
+  ImageIDParam:
+    Description: Default value is ami-0fff1b9a61dec8a5f
+    Type: String
+    Default: ami-0fff1b9a61dec8a5f
+Resources:
+  HITTVPC1:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 15.0.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+      - Key: Name
+        Value: HITT-VPC-1
+  HITTPublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: HITTVPC1
+      CidrBlock: 15.0.0.0/23
+      AvailabilityZone: us-east-1a
+      MapPublicIpOnLaunch: true
+      Tags:
+      - Key: Name
+        Value: HITT-VPC1-Public-Subnet-1
+  HITTPrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: HITTVPC1
+      CidrBlock: 15.0.18.0/22
+      AvailabilityZone: us-east-1a
+      Tags:
+      - Key: Name
+        Value: HITT-VPC1-Private-Subnet-1
+  HITTInternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+      - Key: Name
+        Value: HITT-Internet-Gateway
+  HITTAttachInternetGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId:
+        Ref: HITTVPC1
+      InternetGatewayId:
+        Ref: HITTInternetGateway
+  HITTPublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: HITTVPC1
+      Tags:
+      - Key: Name
+        Value: HITT-Public-Route-Table
+  HITTPublicRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId:
+        Ref: HITTPublicRouteTable
+      DestinationCidrBlock: '0.0.0.0/0'
+      GatewayId:
+        Ref: HITTInternetGateway
+  HITTPublicSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: HITTPublicSubnet1
+      RouteTableId:
+        Ref: HITTPublicRouteTable
+  HITTPrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: HITTVPC1
+      Tags:
+      - Key: Name
+        Value: HITT-Private-Route-Table
+  HITTPrivateSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: HITTPrivateSubnet1
+      RouteTableId:
+        Ref: HITTPrivateRouteTable
+  PublicSubnetEC2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Inbound and Outbound Rules for Public Subnet EC2 instances
+      VpcId:
+        Ref: HITTVPC1
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 443
+        ToPort: 443
+        CidrIp: '0.0.0.0/0'
+      - IpProtocol: icmp
+        FromPort: 8
+        ToPort: -1
+        CidrIp: 15.0.0.0/23
+      - IpProtocol: tcp
+        FromPort: 22
+        ToPort: 22
+        CidrIp: 15.0.0.0/23
+      SecurityGroupEgress:
+      - IpProtocol: tcp
+        FromPort: 443
+        ToPort: 443
+        CidrIp: '0.0.0.0/0'
+      Tags:
+      - Key: Name
+        Value: Public EC2 Instance Security Group
+  PrivateSubnetEC2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Inbound and Outbound Rules for Private Subnet EC2 instances
+      VpcId:
+        Ref: HITTVPC1
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 443
+        ToPort: 443
+        CidrIp: 15.0.0.0/23
+      - IpProtocol: tcp
+        FromPort: 22
+        ToPort: 22
+        CidrIp: 15.0.0.0/23
+      - IpProtocol: icmp
+        FromPort: 8
+        ToPort: -1
+        CidrIp: 15.0.0.0/23
+      Tags:
+      - Key: Name
+        Value: Private EC2 Instance Security Group
+  JUMPEC2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Inbound and Outbound Rules for Public Subnet Jump EC2 instances
+      VpcId:
+        Ref: HITTVPC1
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 22
+        ToPort: 22
+        CidrIp: '0.0.0.0/0'
+      SecurityGroupEgress:
+      - IpProtocol: tcp
+        FromPort: 22
+        ToPort: 22
+        CidrIp: 15.0.18.0/22
+      - IpProtocol: tcp
+        FromPort: 22
+        ToPort: 22
+        CidrIp: 15.0.0.0/23
+      - IpProtocol: icmp
+        FromPort: 8
+        ToPort: -1
+        CidrIp: 15.0.0.0/23
+      - IpProtocol: icmp
+        FromPort: 8
+        ToPort: -1
+        CidrIp: 15.0.18.0/22
+      Tags:
+      - Key: Name
+        Value: Jump Instanc Security Group
+  PubDemoEC2:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType:
+        Ref: InstanceTypeParam
+      ImageId:
+        Ref: ImageIDParam
+      NetworkInterfaces:
+      - AssociatePublicIpAddress: true
+        DeviceIndex: '0'
+        GroupSet:
+        - Ref: PublicSubnetEC2SecurityGroup
+        SubnetId:
+          Ref: HITTPublicSubnet1
+      Tags:
+      - Key: Name
+        Value: Public EC2 Instance
+  PvtDemoEC2:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType:
+        Ref: InstanceTypeParam
+      ImageId:
+        Ref: ImageIDParam
+      NetworkInterfaces:
+      - AssociatePublicIpAddress: false
+        DeviceIndex: '0'
+        GroupSet:
+        - Ref: PrivateSubnetEC2SecurityGroup
+        SubnetId:
+          Ref: HITTPrivateSubnet1
+      Tags:
+      - Key: Name
+        Value: Private EC2 Instance
+  JmpDemoEC2:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType:
+        Ref: InstanceTypeParam
+      ImageId:
+        Ref: ImageIDParam
+      NetworkInterfaces:
+      - AssociatePublicIpAddress: true
+        DeviceIndex: '0'
+        GroupSet:
+        - Ref: JUMPEC2SecurityGroup
+        SubnetId:
+          Ref: HITTPublicSubnet1
+      Tags:
+      - Key: Name
+        Value: Jump EC2 Instance

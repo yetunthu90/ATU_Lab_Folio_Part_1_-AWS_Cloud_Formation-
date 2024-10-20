@@ -103,18 +103,26 @@ Resources:
   PublicSubnetEC2SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Allow https to client host
+      GroupDescription: Inbound and Outbound Rules for Public Subnet EC2 instances
       VpcId: !Ref HITTVPC1
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 443
           ToPort: 443
-          CidrIp: 0.0.0.0/0
+          CidrIp: 0.0.0.0/0 # Inbound rules to allow only HTTPS from internet
+        - IpProtocol: icmp
+          FromPort: 8
+          ToPort: -1
+          CidrIp: 15.0.0.0/23 # Inbound rules to allow icmp ping for testing 
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 15.0.0.0/23 # Inbound rules to allow ssh from Jump Host
       SecurityGroupEgress:
         - IpProtocol: tcp
           FromPort: 443
           ToPort: 443
-          CidrIp: 0.0.0.0/0
+          CidrIp: 0.0.0.0/0 #Outbound rule to allow HTTPS for Public Subnet EC2 instances
       Tags:
         - Key: Name
           Value: Public EC2 Instance Security Group
@@ -123,22 +131,21 @@ Resources:
   PrivateSubnetEC2SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Allow https to client host
+      GroupDescription: Inbound and Outbound Rules for Private Subnet EC2 instances
       VpcId: !Ref HITTVPC1
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 443
           ToPort: 443
-          CidrIp: 15.0.0.0/23
+          CidrIp: 15.0.0.0/23 # Inbound rules to allow  HTTPS from public subnet
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
-          CidrIp: 15.0.0.0/23
-      SecurityGroupEgress:
-        - IpProtocol: tcp
-          FromPort: 443
-          ToPort: 443
-          CidrIp: 15.0.0.0/23
+          CidrIp: 15.0.0.0/23 # Inbound rules to allow ssh from Jump Host
+        - IpProtocol: icmp
+          FromPort: 8
+          ToPort: -1
+          CidrIp: 15.0.0.0/23 # Inbound rules to allow icmp ping for testing 
       Tags:
         - Key: Name
           Value: Private EC2 Instance Security Group
@@ -147,18 +154,30 @@ Resources:
   JUMPEC2SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Allow http to client host
+      GroupDescription: Inbound and Outbound Rules for Public Subnet Jump EC2 instances
       VpcId: !Ref HITTVPC1
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
-          CidrIp: 0.0.0.0/0
+          CidrIp: 0.0.0.0/0 # Inbound rules to allow ssh from internet
       SecurityGroupEgress:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
-          CidrIp: 15.0.18.0/22
+          CidrIp: 15.0.18.0/22 # Outbound rule to ssh Private Subnet 
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 15.0.0.0/23 # Outbound rule to ssh Public  Subnet 
+        - IpProtocol: icmp
+          FromPort: 8
+          ToPort: -1
+          CidrIp: 15.0.0.0/23 # Out rules to Public Subnet allow icmp ping for testing 
+        - IpProtocol: icmp
+          FromPort: 8
+          ToPort: -1
+          CidrIp: 15.0.18.0/22 # Out rules to Private Subnet allow icmp ping for testing
       Tags:
         - Key: Name
           Value: Jump Instanc Security Group
