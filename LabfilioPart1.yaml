@@ -85,5 +85,5 @@ Resources:
   HITTPrivateSubnetRouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      SubnetId: !Ref HITTPrivateSubnet1 # Binding to Public Subnet 1
+      SubnetId: !Ref HITTPrivateSubnet1 # Binding to Public Subnet 1 for internal communication
       RouteTableId: !Ref HITTPrivateRouteTable #Binding to Public Route Table
