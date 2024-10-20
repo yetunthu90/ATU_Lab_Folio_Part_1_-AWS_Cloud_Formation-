@@ -1,5 +1,16 @@
 Description: FridayHITT AWS Cloud Formation Infrastruture Template
 
+Parameters:
+  InstanceTypeParam:
+    Description: Default value is t2.micro
+    Type: String
+    Default: t2.micro
+
+  ImageIDParam:
+    Description: Default value is ami-0fff1b9a61dec8a5f
+    Type: String
+    Default: ami-0fff1b9a61dec8a5f
+
 Resources:
   # Create VPC -> HITTVPC and VPC Number, in this case VPC1
   HITTVPC1:
@@ -87,3 +98,113 @@ Resources:
     Properties:
       SubnetId: !Ref HITTPrivateSubnet1 # Binding to Public Subnet 1 for internal communication
       RouteTableId: !Ref HITTPrivateRouteTable #Binding to Public Route Table
+
+  #Security Group for Public Subnet EC2 instances
+  PublicSubnetEC2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow https to client host
+      VpcId: !Ref HITTVPC1
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: Public EC2 Instance Security Group
+
+  #Security Group for Private Subnet EC2 instances
+  PrivateSubnetEC2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow https to client host
+      VpcId: !Ref HITTVPC1
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 15.0.0.0/23
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 15.0.0.0/23
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 15.0.0.0/23
+      Tags:
+        - Key: Name
+          Value: Private EC2 Instance Security Group
+
+  #Security Group for Public Subnet JUMP EC2 instances
+  JUMPEC2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow http to client host
+      VpcId: !Ref HITTVPC1
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 15.0.18.0/22
+      Tags:
+        - Key: Name
+          Value: Jump Instanc Security Group
+
+  #Public EC2 instance
+  PubDemoEC2:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceTypeParam
+      ImageId: !Ref ImageIDParam
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: true
+          DeviceIndex: '0'
+          GroupSet:
+            - !Ref PublicSubnetEC2SecurityGroup
+          SubnetId: !Ref HITTPublicSubnet1
+      Tags:
+        - Key: Name
+          Value: Public EC2 Instance
+  #Private EC2 instance
+  PvtDemoEC2:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceTypeParam
+      ImageId: !Ref ImageIDParam
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: false
+          DeviceIndex: '0'
+          GroupSet:
+            - !Ref PrivateSubnetEC2SecurityGroup
+          SubnetId: !Ref HITTPrivateSubnet1
+      Tags:
+        - Key: Name
+          Value: Private EC2 Instance
+  #Jump EC2 instance
+  JmpDemoEC2:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceTypeParam
+      ImageId: !Ref ImageIDParam
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: true
+          DeviceIndex: '0'
+          GroupSet:
+            - !Ref JUMPEC2SecurityGroup
+          SubnetId: !Ref HITTPublicSubnet1
+      Tags:
+        - Key: Name
+          Value: Jump EC2 Instance
