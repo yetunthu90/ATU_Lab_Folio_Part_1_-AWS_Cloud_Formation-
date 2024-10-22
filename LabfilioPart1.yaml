@@ -35,7 +35,7 @@ Resources:
         - Key: Name # Tag Public Subnet Name
           Value: HITT-VPC1-Public-Subnet-1
     # Value for HITTVPC1-Public-Subnet-1  more clear reading
-    # NOTE THERE IS RESERVED ROOM IPS for Public Subnet Future Expansion (Total 4,056 usable IP addresses for public subnet)
+    #  THERE IS RESERVED ROOM IPS for between Public Subnet and Private Subnet to avoid IPs conflict
 
 
     # Create  Private Subnet HITTPublicSubnet  and Subnet Number, in this case Private Subnet1
@@ -43,7 +43,7 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref HITTVPC1 # Attached to HITTVPC1 
-      CidrBlock: 15.0.18.0/22 # Allocate 1019 usable IPs for this private subnet (5 IPs reserved by AWS)
+      CidrBlock: 15.0.4.0/22 # Allocate 1019 usable IPs for this private subnet (5 IPs reserved by AWS)
       AvailabilityZone: us-east-1a # AZ for subnet US-East(N.Virginia)
       Tags:
         - Key: Name # Tag Private Subnet Name
@@ -113,7 +113,7 @@ Resources:
         - IpProtocol: icmp
           FromPort: 8
           ToPort: -1
-          CidrIp: 15.0.0.0/23 # Inbound rules to allow icmp ping for testing 
+          CidrIp: 15.0.0.0/16 # Inbound rules to allow icmp ping for testing 
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
@@ -165,29 +165,26 @@ Resources:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
-          CidrIp: 15.0.18.0/22 # Outbound rule to ssh Private Subnet 
-        - IpProtocol: tcp
-          FromPort: 22
-          ToPort: 22
-          CidrIp: 15.0.0.0/23 # Outbound rule to ssh Public  Subnet 
+          CidrIp: 15.0.0.0/16 # Outbound rule to ssh Private Subnet 
         - IpProtocol: icmp
           FromPort: 8
           ToPort: -1
-          CidrIp: 15.0.0.0/23 # Out rules to Public Subnet allow icmp ping for testing 
+          CidrIp: 15.0.0.0/16 # Out rules to Public Subnet allow icmp ping for testing 
         - IpProtocol: icmp
           FromPort: 8
           ToPort: -1
-          CidrIp: 15.0.18.0/22 # Out rules to Private Subnet allow icmp ping for testing
+          CidrIp: 0.0.0.0/0 # Out rules to Public Subnet allow icmp ping for internet testing 
       Tags:
         - Key: Name
           Value: Jump Instanc Security Group
 
   #Public EC2 instance
-  PubDemoEC2:
+  PublicSubnetEC2:
     Type: AWS::EC2::Instance
     Properties:
       InstanceType: !Ref InstanceTypeParam
       ImageId: !Ref ImageIDParam
+      KeyName: FridayHITTKeyPair
       NetworkInterfaces:
         - AssociatePublicIpAddress: true
           DeviceIndex: '0'
@@ -198,11 +195,12 @@ Resources:
         - Key: Name
           Value: Public EC2 Instance
   #Private EC2 instance
-  PvtDemoEC2:
+  PrivateSubnetEC2:
     Type: AWS::EC2::Instance
     Properties:
       InstanceType: !Ref InstanceTypeParam
       ImageId: !Ref ImageIDParam
+      KeyName: FridayHITTKeyPair
       NetworkInterfaces:
         - AssociatePublicIpAddress: false
           DeviceIndex: '0'
@@ -213,11 +211,12 @@ Resources:
         - Key: Name
           Value: Private EC2 Instance
   #Jump EC2 instance
-  JmpDemoEC2:
+  JumpEC2:
     Type: AWS::EC2::Instance
     Properties:
       InstanceType: !Ref InstanceTypeParam
       ImageId: !Ref ImageIDParam
+      KeyName: FridayHITTKeyPair
       NetworkInterfaces:
         - AssociatePublicIpAddress: true
           DeviceIndex: '0'

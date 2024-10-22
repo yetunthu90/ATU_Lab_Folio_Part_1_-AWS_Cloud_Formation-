@@ -34,7 +34,7 @@ Resources:
     Properties:
       VpcId:
         Ref: HITTVPC1
-      CidrBlock: 15.0.18.0/22
+      CidrBlock: 15.0.4.0/22
       AvailabilityZone: us-east-1a
       Tags:
       - Key: Name
@@ -104,7 +104,7 @@ Resources:
       - IpProtocol: icmp
         FromPort: 8
         ToPort: -1
-        CidrIp: 15.0.0.0/23
+        CidrIp: 15.0.0.0/16
       - IpProtocol: tcp
         FromPort: 22
         ToPort: 22
@@ -154,29 +154,26 @@ Resources:
       - IpProtocol: tcp
         FromPort: 22
         ToPort: 22
-        CidrIp: 15.0.18.0/22
-      - IpProtocol: tcp
-        FromPort: 22
-        ToPort: 22
-        CidrIp: 15.0.0.0/23
+        CidrIp: 15.0.0.0/16
       - IpProtocol: icmp
         FromPort: 8
         ToPort: -1
-        CidrIp: 15.0.0.0/23
+        CidrIp: 15.0.0.0/16
       - IpProtocol: icmp
         FromPort: 8
         ToPort: -1
-        CidrIp: 15.0.18.0/22
+        CidrIp: '0.0.0.0/0'
       Tags:
       - Key: Name
         Value: Jump Instanc Security Group
-  PubDemoEC2:
+  PublicSubnetEC2:
     Type: AWS::EC2::Instance
     Properties:
       InstanceType:
         Ref: InstanceTypeParam
       ImageId:
         Ref: ImageIDParam
+      KeyName: FridayHITTKeyPair
       NetworkInterfaces:
       - AssociatePublicIpAddress: true
         DeviceIndex: '0'
@@ -187,13 +184,14 @@ Resources:
       Tags:
       - Key: Name
         Value: Public EC2 Instance
-  PvtDemoEC2:
+  PrivateSubnetEC2:
     Type: AWS::EC2::Instance
     Properties:
       InstanceType:
         Ref: InstanceTypeParam
       ImageId:
         Ref: ImageIDParam
+      KeyName: FridayHITTKeyPair
       NetworkInterfaces:
       - AssociatePublicIpAddress: false
         DeviceIndex: '0'
@@ -204,13 +202,14 @@ Resources:
       Tags:
       - Key: Name
         Value: Private EC2 Instance
-  JmpDemoEC2:
+  JumpEC2:
     Type: AWS::EC2::Instance
     Properties:
       InstanceType:
         Ref: InstanceTypeParam
       ImageId:
         Ref: ImageIDParam
+      KeyName: FridayHITTKeyPair
       NetworkInterfaces:
       - AssociatePublicIpAddress: true
         DeviceIndex: '0'
