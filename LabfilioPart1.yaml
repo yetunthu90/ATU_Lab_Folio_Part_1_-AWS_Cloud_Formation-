@@ -1,5 +1,5 @@
 Description: FridayHITT AWS Cloud Formation Infrastruture Template
-
+#Parameters
 Parameters:
   InstanceTypeParam:
     Description: Default value is t2.micro
@@ -168,7 +168,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: !Ref HTTPSPortParam
           ToPort: !Ref HTTPSPortParam
-          DestinationSecurityGroupId: !Ref PrivateSubnetEC2SecurityGroup # Outbout rule to connect private subnet
+          CidrIp: 15.0.0.0/23 # Outbout rule to connect private subnet
         - IpProtocol: icmp
           FromPort: 8
           ToPort: -1
@@ -307,6 +307,7 @@ Resources:
         - Key: Name
           Value: Jump EC2 Instance
 
+#Output for AWS resources
 Outputs:
   VPCID:
     Description: The ID of the VPC
