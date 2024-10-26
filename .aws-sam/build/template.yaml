@@ -5,9 +5,44 @@ Parameters:
     Type: String
     Default: t2.micro
   ImageIDParam:
-    Description: Default value is ami-0fff1b9a61dec8a5f
+    Description: Default AMI is AMI-1 AWS Linux
     Type: String
-    Default: ami-0fff1b9a61dec8a5f
+    Default: AMI1
+    AllowedValues:
+    - AMI1
+    - AMI2
+  HTTPSPortParam:
+    Description: Default value for HTTPS port
+    Type: Number
+    Default: 443
+  HTTPPortParam:
+    Description: Default value for HTTP port
+    Type: Number
+    Default: 8189
+  SSHPortParam:
+    Description: Default value for SSH port
+    Type: Number
+    Default: 22
+  MariaDBPortParam:
+    Description: Default value for MariaDB port
+    Type: Number
+    Default: 3306
+  AvailabilityZoneParam:
+    Description: Default value for Availability zone
+    Type: String
+    Default: us-east-1a
+  JumpHostAccessIPParam:
+    Description: Default value for Jump Host SSH access IP !And
+    Type: String
+    Default: 93.107.6.12/32
+Mappings:
+  RegionMapForAMI:
+    us-east-1:
+      AMI1: ami-06b21ccaeff8cd686
+      AMI2: ami-0866a3c8686eaeeba
+    us-west-1:
+      AMI1: ami-050cd642fd83388e4
+      AMI2: ami-0ea3c35c5c3284d82
 Resources:
   HITTVPC1:
     Type: AWS::EC2::VPC
@@ -34,7 +69,7 @@ Resources:
     Properties:
       VpcId:
         Ref: HITTVPC1
-      CidrBlock: 15.0.4.0/22
+      CidrBlock: 15.0.2.0/23
       AvailabilityZone: us-east-1a
       Tags:
       - Key: Name
@@ -98,21 +133,38 @@ Resources:
         Ref: HITTVPC1
       SecurityGroupIngress:
       - IpProtocol: tcp
-        FromPort: 443
-        ToPort: 443
+        FromPort:
+          Ref: HTTPSPortParam
+        ToPort:
+          Ref: HTTPSPortParam
+        CidrIp: '0.0.0.0/0'
+      - IpProtocol: tcp
+        FromPort:
+          Ref: HTTPPortParam
+        ToPort:
+          Ref: HTTPPortParam
         CidrIp: '0.0.0.0/0'
       - IpProtocol: icmp
         FromPort: 8
         ToPort: -1
         CidrIp: 15.0.0.0/16
       - IpProtocol: tcp
-        FromPort: 22
-        ToPort: 22
+        FromPort:
+          Ref: SSHPortParam
+        ToPort:
+          Ref: SSHPortParam
         CidrIp: 15.0.0.0/23
       SecurityGroupEgress:
       - IpProtocol: tcp
-        FromPort: 443
-        ToPort: 443
+        FromPort:
+          Ref: HTTPSPortParam
+        ToPort:
+          Ref: HTTPSPortParam
+        DestinationSecurityGroupId:
+          Ref: PrivateSubnetEC2SecurityGroup
+      - IpProtocol: icmp
+        FromPort: 8
+        ToPort: -1
         CidrIp: '0.0.0.0/0'
       Tags:
       - Key: Name
@@ -125,17 +177,50 @@ Resources:
         Ref: HITTVPC1
       SecurityGroupIngress:
       - IpProtocol: tcp
-        FromPort: 443
-        ToPort: 443
+        FromPort:
+          Ref: HTTPSPortParam
+        ToPort:
+          Ref: HTTPSPortParam
         CidrIp: 15.0.0.0/23
       - IpProtocol: tcp
-        FromPort: 22
-        ToPort: 22
+        FromPort:
+          Ref: HTTPPortParam
+        ToPort:
+          Ref: HTTPPortParam
+        CidrIp: 15.0.0.0/23
+      - IpProtocol: tcp
+        FromPort:
+          Ref: SSHPortParam
+        ToPort:
+          Ref: SSHPortParam
+        CidrIp: 15.0.0.0/23
+      - IpProtocol: tcp
+        FromPort:
+          Ref: MariaDBPortParam
+        ToPort:
+          Ref: MariaDBPortParam
         CidrIp: 15.0.0.0/23
       - IpProtocol: icmp
         FromPort: 8
         ToPort: -1
         CidrIp: 15.0.0.0/23
+      SecurityGroupEgress:
+      - IpProtocol: tcp
+        FromPort:
+          Ref: HTTPSPortParam
+        ToPort:
+          Ref: HTTPSPortParam
+        CidrIp: 15.0.0.0/23
+      - IpProtocol: tcp
+        FromPort:
+          Ref: HTTPPortParam
+        ToPort:
+          Ref: HTTPPortParam
+        CidrIp: 15.0.0.0/23
+      - IpProtocol: icmp
+        FromPort: 8
+        ToPort: -1
+        CidrIp: '0.0.0.0/0'
       Tags:
       - Key: Name
         Value: Private EC2 Instance Security Group
@@ -147,13 +232,18 @@ Resources:
         Ref: HITTVPC1
       SecurityGroupIngress:
       - IpProtocol: tcp
-        FromPort: 22
-        ToPort: 22
-        CidrIp: '0.0.0.0/0'
+        FromPort:
+          Ref: SSHPortParam
+        ToPort:
+          Ref: SSHPortParam
+        CidrIp:
+          Ref: JumpHostAccessIPParam
       SecurityGroupEgress:
       - IpProtocol: tcp
-        FromPort: 22
-        ToPort: 22
+        FromPort:
+          Ref: SSHPortParam
+        ToPort:
+          Ref: SSHPortParam
         CidrIp: 15.0.0.0/16
       - IpProtocol: icmp
         FromPort: 8
@@ -172,7 +262,10 @@ Resources:
       InstanceType:
         Ref: InstanceTypeParam
       ImageId:
-        Ref: ImageIDParam
+        Fn::FindInMap:
+        - RegionMapForAMI
+        - Ref: AWS::Region
+        - Ref: ImageIDParam
       KeyName: FridayHITTKeyPair
       NetworkInterfaces:
       - AssociatePublicIpAddress: true
@@ -190,7 +283,10 @@ Resources:
       InstanceType:
         Ref: InstanceTypeParam
       ImageId:
-        Ref: ImageIDParam
+        Fn::FindInMap:
+        - RegionMapForAMI
+        - Ref: AWS::Region
+        - Ref: ImageIDParam
       KeyName: FridayHITTKeyPair
       NetworkInterfaces:
       - AssociatePublicIpAddress: false
@@ -208,7 +304,10 @@ Resources:
       InstanceType:
         Ref: InstanceTypeParam
       ImageId:
-        Ref: ImageIDParam
+        Fn::FindInMap:
+        - RegionMapForAMI
+        - Ref: AWS::Region
+        - Ref: ImageIDParam
       KeyName: FridayHITTKeyPair
       NetworkInterfaces:
       - AssociatePublicIpAddress: true
@@ -220,3 +319,82 @@ Resources:
       Tags:
       - Key: Name
         Value: Jump EC2 Instance
+Outputs:
+  VPCID:
+    Description: The ID of the VPC
+    Value:
+      Ref: HITTVPC1
+    Export:
+      Name: VPCID
+  InternetGatewayID:
+    Description: The ID of the Internet Gateway
+    Value:
+      Ref: HITTInternetGateway
+    Export:
+      Name: InternetGatewayID
+  PublicSubnetID:
+    Description: The ID of the Public Subnet
+    Value:
+      Ref: HITTPublicSubnet1
+    Export:
+      Name: PublicSubnetID
+  PrivateSubnetID:
+    Description: The ID of the Private Subnet
+    Value:
+      Ref: HITTPrivateSubnet1
+    Export:
+      Name: PrivateSubnetID
+  PublicRouteTableID:
+    Description: The ID of the Public Route Table
+    Value:
+      Ref: HITTPublicRouteTable
+    Export:
+      Name: PublicRouteTableID
+  PrivateRouteTableID:
+    Description: The ID of the Private Route Table
+    Value:
+      Ref: HITTPrivateRouteTable
+    Export:
+      Name: PrivateRouteTableID
+  PublicRouteID:
+    Description: The ID of the Public Route
+    Value:
+      Ref: HITTPublicRoute
+    Export:
+      Name: PublicRouteID
+  PublicSubnetSecurityGroupID:
+    Description: The ID of the Public Subnet Security Group
+    Value:
+      Ref: PublicSubnetEC2SecurityGroup
+    Export:
+      Name: PublicSubnetSecurityGroupID
+  PrivateSubnetSecurityGroupID:
+    Description: The ID of the Private Subnet Security Group
+    Value:
+      Ref: PrivateSubnetEC2SecurityGroup
+    Export:
+      Name: PrivateSubnetSecurityGroupID
+  JumpHostSecurityGroupID:
+    Description: The ID of the Jump Host Security Group
+    Value:
+      Ref: JUMPEC2SecurityGroup
+    Export:
+      Name: JumpHostSecurityGroupID
+  PublicSubnetEC2InstanceID:
+    Description: The ID of the Public Subnet EC2 instance
+    Value:
+      Ref: PublicSubnetEC2
+    Export:
+      Name: PublicSubnetEC2InstanceID
+  PrivateSubnetEC2InstanceID:
+    Description: The ID of the Private Subnet EC2 instance
+    Value:
+      Ref: PrivateSubnetEC2
+    Export:
+      Name: PrivateSubnetEC2InstanceID
+  JumpHostEC2InstanceID:
+    Description: The ID of the Jump Host EC2 instance
+    Value:
+      Ref: JumpEC2
+    Export:
+      Name: JumpHostEC2InstanceID
