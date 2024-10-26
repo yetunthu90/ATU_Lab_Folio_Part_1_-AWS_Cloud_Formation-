@@ -195,7 +195,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: !Ref SSHPortParam
           ToPort: !Ref SSHPortParam
-          CidrIp: 15.0.0.0/23 # Inbound rules to allow  SSH from public subnet
+          CidrIp: 54.92.234.115/32 # Inbound rules to allow  SSH from Jump host
         - IpProtocol: tcp
           FromPort: !Ref MariaDBPortParam
           ToPort: !Ref MariaDBPortParam
@@ -298,7 +298,7 @@ Resources:
         - !Ref ImageIDParam
       KeyName: FridayHITTKeyPair
       NetworkInterfaces:
-        - AssociatePublicIpAddress: true
+        - AssociatePublicIpAddress: false
           DeviceIndex: '0'
           GroupSet:
             - !Ref JUMPEC2SecurityGroup
@@ -306,6 +306,12 @@ Resources:
       Tags:
         - Key: Name
           Value: Jump EC2 Instance
+# Elastic IP's allocation ID for Jump Host
+  ElasticIPAssociationforJumpHost:
+    Type: AWS::EC2::EIPAssociation
+    Properties:
+      AllocationId: eipalloc-05eb57bb45071b3d8 
+      InstanceId: !Ref JumpEC2
 
 #Output for AWS resources
 Outputs:
