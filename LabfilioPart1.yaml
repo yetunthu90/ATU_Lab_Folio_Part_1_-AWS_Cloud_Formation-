@@ -11,8 +11,8 @@ Parameters:
     Type: String
     Default: AMI1
     AllowedValues:
-      - AMI1
-      - AMI2
+      - AMI1 # AWS Linux
+      - AMI2 # AWS Ubuntu
 
   HTTPSPortParam:
     Description: Default value for HTTPS port
@@ -47,11 +47,11 @@ Parameters:
 Mappings:
   RegionMapForAMI:
     us-east-1:
-      AMI1: ami-06b21ccaeff8cd686
-      AMI2: ami-0866a3c8686eaeeba
+      AMI1: ami-06b21ccaeff8cd686 # AWS Linux
+      AMI2: ami-0866a3c8686eaeeba # AWS Ubuntu
     us-west-1:
-      AMI1: ami-050cd642fd83388e4
-      AMI2: ami-0ea3c35c5c3284d82
+      AMI1: ami-050cd642fd83388e4 # AWS Linux
+      AMI2: ami-0ea3c35c5c3284d82 # AWS Ubuntu
 
 Resources:
   # Create VPC -> HITTVPC and VPC Number, in this case VPC1
@@ -163,7 +163,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: !Ref SSHPortParam
           ToPort: !Ref SSHPortParam
-          CidrIp: 15.0.0.0/23 # Inbound rules to allow ssh only from Jump Host
+          CidrIp: 54.92.234.115/32 # Inbound rules to allow ssh only from Jump Host
       SecurityGroupEgress:
         - IpProtocol: tcp
           FromPort: !Ref HTTPSPortParam
@@ -306,11 +306,11 @@ Resources:
       Tags:
         - Key: Name
           Value: Jump EC2 Instance
-# Elastic IP's allocation ID for Jump Host
+  # Elastic IP's allocation ID for Jump Host
   ElasticIPAssociationforJumpHost:
     Type: AWS::EC2::EIPAssociation
     Properties:
-      AllocationId: eipalloc-05eb57bb45071b3d8 
+      AllocationId: eipalloc-05eb57bb45071b3d8
       InstanceId: !Ref JumpEC2
 
 #Output for AWS resources
