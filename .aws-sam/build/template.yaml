@@ -160,8 +160,7 @@ Resources:
           Ref: HTTPSPortParam
         ToPort:
           Ref: HTTPSPortParam
-        DestinationSecurityGroupId:
-          Ref: PrivateSubnetEC2SecurityGroup
+        CidrIp: 15.0.0.0/23
       - IpProtocol: icmp
         FromPort: 8
         ToPort: -1
