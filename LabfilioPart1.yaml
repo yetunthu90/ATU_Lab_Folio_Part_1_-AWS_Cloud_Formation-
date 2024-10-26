@@ -306,11 +306,11 @@ Resources:
       Tags:
         - Key: Name
           Value: Jump EC2 Instance
-
+# Elastic IP's allocation ID for Jump Host
   ElasticIPAssociationforJumpHost:
     Type: AWS::EC2::EIPAssociation
     Properties:
-      AllocationId: eipalloc-05eb57bb45071b3d8 # Elastic IP's allocation ID for Jump Host
+      AllocationId: eipalloc-05eb57bb45071b3d8 
       InstanceId: !Ref JumpEC2
 
 #Output for AWS resources
